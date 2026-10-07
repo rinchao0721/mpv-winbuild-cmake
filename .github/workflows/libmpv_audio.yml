@@ -41,6 +41,13 @@ jobs:
           restore-keys: |
             libmpv-audio-gcc-${{ env.BIT }}_toolchain
 
+      # The cache only has to carry the (slow to build) GCC toolchain. Package stamps that came
+      # along with it point at sources that are no longer on disk, so drop them and let every
+      # run clone and build the packages from scratch.
+      - name: Dropping stale package state
+        run: |
+          rm -rf build_$BIT/packages src_packages
+
       - name: Running custom command
         if: ${{ github.event.inputs.command != '' }}
         continue-on-error: true
@@ -63,7 +70,14 @@ jobs:
 
       - name: Building libmpv
         run: |
-          ninja -C build_$BIT update
+          for i in 1 2 3; do
+            ninja -C build_$BIT update && break
+            echo "::warning::ninja update failed (attempt $i)"
+            git -C src_packages/openssl rev-parse HEAD || true
+            git -C src_packages/openssl cat-file -t d8bf6cdd4849925c30e4f1911c7acb49cb34b702 || true
+            [[ $i == 3 ]] && exit 1
+            sleep 20
+          done
           ninja -C build_$BIT mpv
 
       - name: Collecting build
