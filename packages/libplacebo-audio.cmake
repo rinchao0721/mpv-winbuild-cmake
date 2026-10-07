@@ -2,6 +2,8 @@
 # mpv hard-requires libplacebo at configure time, but with every GPU backend and shader
 # compiler turned off it only contributes its CPU-side code, and drops the whole
 # vulkan / shaderc / glslang / spirv-cross / lcms2 dependency chain.
+# vulkan-header (headers only) is still needed: libplacebo's vulkan stubs include
+# <vulkan/vulkan.h> even with -Dvulkan=disabled.
 get_property(src_glad TARGET glad PROPERTY _EP_SOURCE_DIR)
 get_property(src_fast_float TARGET fast_float PROPERTY _EP_SOURCE_DIR)
 ExternalProject_Add(libplacebo
@@ -9,6 +11,7 @@ ExternalProject_Add(libplacebo
         glad
         fast_float
         xxhash
+        vulkan-header
     GIT_REPOSITORY https://github.com/haasn/libplacebo.git
     SOURCE_DIR ${SOURCE_LOCATION}
     GIT_CLONE_FLAGS "--filter=tree:0"

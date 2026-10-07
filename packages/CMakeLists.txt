@@ -125,6 +125,7 @@ if(AUDIO_ONLY)
         xxhash
         glad
         fast_float
+        vulkan-header
         libplacebo
         openssl
         ffmpeg
