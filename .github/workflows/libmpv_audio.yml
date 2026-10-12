@@ -4,7 +4,9 @@ defaults:
     shell: bash
 
 # Builds the slim, audio-only libmpv-2.dll (cmake -DAUDIO_ONLY=ON, target "mpv").
-# The result is uploaded as a workflow artifact; nothing is published anywhere.
+# The result is always uploaded as a workflow artifact; with "publish" checked it is also
+# released as libmpv-audio-<date>-git-<mpv hash> together with a SHA256SUMS file, so that
+# downstream builds can download a fixed tag and verify the checksum.
 on:
   workflow_dispatch:
     inputs:
@@ -12,6 +14,11 @@ on:
         description: 'Run custom command before building'
         required: false
         type: string
+      publish:
+        description: 'Publish the build as a GitHub release'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   build_libmpv:
@@ -106,3 +113,43 @@ jobs:
         with:
           name: libmpv-audio-${{ env.BIT }}
           path: release_${{ env.BIT }}/mpv-dev-*.7z
+
+  publish:
+    name: Publishing release
+    needs: build_libmpv
+    if: ${{ github.event.inputs.publish == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Downloading libmpv
+        uses: actions/download-artifact@main
+        with:
+          name: libmpv-audio-x86_64
+          path: dist
+
+      - name: Unpacking and checksumming
+        id: pack
+        run: |
+          cd dist
+          ARCHIVE=$(ls mpv-dev-*.7z)
+          # mpv-dev-x86_64-20261013-git-0123456789.7z -> libmpv-audio-20261013-git-0123456789
+          TAG=libmpv-audio-$(echo "$ARCHIVE" | sed -E 's/^mpv-dev-x86_64[^-]*-(.*)\.7z$/\1/')
+          7z e -y "$ARCHIVE" -r libmpv-2.dll >/dev/null
+          test -f libmpv-2.dll
+          sha256sum libmpv-2.dll "$ARCHIVE" > SHA256SUMS
+          cat SHA256SUMS
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "archive=$ARCHIVE" >> "$GITHUB_OUTPUT"
+
+      - name: Creating release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd dist
+          gh release create "${{ steps.pack.outputs.tag }}" \
+            --repo "${{ github.repository }}" \
+            --target "${{ github.sha }}" \
+            --title "${{ steps.pack.outputs.tag }}" \
+            --notes "Slim audio-only libmpv-2.dll (x86_64, AUDIO_ONLY=ON) built from this commit. Verify with SHA256SUMS." \
+            libmpv-2.dll "${{ steps.pack.outputs.archive }}" SHA256SUMS

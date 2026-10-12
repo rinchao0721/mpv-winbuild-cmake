@@ -84,6 +84,9 @@ ExternalProject_Add(mpv
         -Dvaapi-win32=disabled
         -Dwin32-smtc=disabled
         -Dc_args='-Wno-error=int-conversion'
+        # libplacebo is C++; the full build gets -lstdc++ through FFmpeg's --extra-libs, the slim
+        # FFmpeg does not, so link it here or libplacebo's std::to_chars/from_chars stay undefined
+        -Dc_link_args='-lstdc++'
     BUILD_COMMAND ${EXEC} LTO_JOB=1 ninja -C <BINARY_DIR>
     INSTALL_COMMAND ""
     LOG_DOWNLOAD 1 LOG_UPDATE 1 LOG_CONFIGURE 1 LOG_BUILD 1 LOG_INSTALL 1
