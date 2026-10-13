@@ -127,7 +127,6 @@ if(AUDIO_ONLY)
         fast_float
         vulkan-header
         libplacebo
-        openssl
         ffmpeg
         mpv
     )

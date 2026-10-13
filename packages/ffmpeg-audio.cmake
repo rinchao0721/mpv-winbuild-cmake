@@ -2,7 +2,8 @@
 # Everything is disabled first and then white-listed, so the binary only contains
 # what a music player needs. Muxers are kept for mpv's stream-record / dump-cache.
 # Every component name below was checked against `configure --list-*` of FFmpeg master.
-# No GPL libraries are linked, so the result is LGPL (version3 is needed by OpenSSL).
+# No GPL libraries are linked, so the result is LGPL. TLS uses Windows Schannel: it verifies
+# certificates against the system store, which a cross-built OpenSSL cannot find on its own.
 
 # Audio decoders (native ones only, no external codec libraries), plus decoders
 # for the cover art that is embedded in audio files.
@@ -62,7 +63,6 @@ ffmpeg_audio_join(ffmpeg_audio_bsfs_opt      ${ffmpeg_audio_bsfs})
 ExternalProject_Add(ffmpeg
     DEPENDS
         zlib
-        openssl
     GIT_REPOSITORY https://github.com/FFmpeg/FFmpeg.git
     SOURCE_DIR ${SOURCE_LOCATION}
     GIT_CLONE_FLAGS "--sparse --filter=tree:0"
@@ -76,7 +76,6 @@ ExternalProject_Add(ffmpeg
         --pkg-config-flags=--static
         --enable-cross-compile
         --enable-runtime-cpudetect
-        --enable-version3
         --disable-autodetect
         --disable-everything
         --disable-debug
@@ -86,7 +85,7 @@ ExternalProject_Add(ffmpeg
         --disable-hwaccels
         --enable-network
         --enable-zlib
-        --enable-openssl
+        --enable-schannel
         --enable-decoder=${ffmpeg_audio_decoders_opt}
         --enable-demuxer=${ffmpeg_audio_demuxers_opt}
         --enable-parser=${ffmpeg_audio_parsers_opt}
