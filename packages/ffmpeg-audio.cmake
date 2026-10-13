@@ -28,9 +28,10 @@ set(ffmpeg_audio_parsers
     aac aac_latm ac3 cook flac gsm mpegaudio opus tak vorbis dca mjpeg png webp
 )
 # Requested muxers: mp3 flac ogg ipod(m4a) matroska wav adts. `opus` is added so that
-# *.opus files are picked by extension; it is tiny.
+# *.opus files are picked by extension; it is tiny. Output formats are guessed from the file
+# extension, and *.mka belongs to `matroska_audio`, not `matroska` (which only claims *.mkv).
 set(ffmpeg_audio_muxers
-    mp3 flac ogg opus ipod matroska wav adts
+    mp3 flac ogg opus ipod matroska matroska_audio wav adts
 )
 set(ffmpeg_audio_protocols
     async cache crypto data file http httpproxy https pipe subfile tcp tls
